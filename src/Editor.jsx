@@ -6,53 +6,70 @@ const Editor = () => {
   const [content, setContent] = useState("");
   const [color, setColor] = useState("#000000");
 
-  const applyTag = (tag) => {
-    const textarea = textRef.current;
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
+ const applyTag = (tag) => {
+  const textarea = textRef.current;
+  const start = textarea.selectionStart;
+  const end = textarea.selectionEnd;
 
-    if (start === end) return;
+  const before = textarea.value.slice(0, start);
+  const after = textarea.value.slice(end);
 
+  let insert = "";
+
+  if (start === end) {
+    // No text selected → insert empty tag pair
+    insert = `<${tag}></${tag}>`;
+  } else {
+    // Text selected → wrap it
     const selected = textarea.value.slice(start, end);
-    const before = textarea.value.slice(0, start);
-    const after = textarea.value.slice(end);
+    insert = `<${tag}>${selected}</${tag}>`;
+  }
 
-    const wrapped = `<${tag}>${selected}</${tag}>`;
-    const newValue = before + wrapped + after;
+  const newValue = before + insert + after;
+  textarea.value = newValue;
+  setContent(newValue);
 
-    setContent(newValue);   
-    textarea.value = newValue; 
+  setTimeout(() => {
+    textarea.focus();
+    const cursorPos =
+      start + (start === end ? tag.length + 2 : insert.length); // put cursor between if no selection
+    textarea.setSelectionRange(cursorPos, cursorPos);
+  }, 0);
+};
 
-    setTimeout(() => {
-      textarea.focus();
-      textarea.setSelectionRange(before.length + wrapped.length, before.length + wrapped.length);
-    }, 0);
-  };
+const applyColorImmediately = (selectedColor) => {
+  const textarea = textRef.current;
+  const start = textarea.selectionStart;
+  const end = textarea.selectionEnd;
 
-  const applyColorImmediately = (selectedColor) => {
-    const textarea = textRef.current;
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
+  const before = textarea.value.slice(0, start);
+  const after = textarea.value.slice(end);
 
-    const before = textarea.value.slice(0, start);
-    const after = textarea.value.slice(end);
+  let insert = "";
+  let cursorOffset = 0;
 
-    let insert = "";
-    if (start === end) {
-      insert = `<span style="color:${selectedColor}"></span>`;
-    } else {
-      const selectedText = textarea.value.slice(start, end);
-      insert = `<span style="color:${selectedColor}">${selectedText}</span>`;
-    }
+  if (start === end) {
+    // No text selected — insert a span and place cursor between
+    insert = `<span style="color:${selectedColor}"></span>`;
+    cursorOffset = `<span style="color:${selectedColor}">`.length;
+  } else {
+    // Text selected — wrap it
+    const selectedText = textarea.value.slice(start, end);
+    insert = `<span style="color:${selectedColor}">${selectedText}</span>`;
+    cursorOffset = insert.length;
+  }
 
-    const newValue = before + insert + after;
-    setContent(newValue);
-    textarea.value = newValue;
-    setTimeout(() => {
-      textarea.focus();
-      textarea.setSelectionRange(before.length + insert.length, before.length + insert.length);
-    }, 0);
-  };
+  const newValue = before + insert + after;
+  textarea.value = newValue;
+  setContent(newValue);
+
+  // Move cursor inside empty span or to end of inserted text
+  setTimeout(() => {
+    textarea.focus();
+    textarea.setSelectionRange(start + cursorOffset, start + cursorOffset);
+  }, 0);
+};
+
 
   return (
     <div className="editor-wrapper">
